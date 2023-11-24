@@ -80,13 +80,9 @@ juce_add_plugin("${PROJECT_NAME}"
     # You might want to use v${MAJOR_VERSION} here once you go to v2...
     PRODUCT_NAME "${PRODUCT_NAME}")
 
-# This lets us use our code in both the JUCE targets and our Test target
-# Without running into ODR violations
-add_library(SharedCode INTERFACE)
-
 # C++20, please
 # Use cxx_std_23 for C++23 (as of CMake v 3.20)
-target_compile_features(SharedCode INTERFACE cxx_std_20)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
 # Manually list all .h and .cpp files for the plugin
 # If you are like me, you'll use globs for your sanity.
@@ -94,7 +90,7 @@ target_compile_features(SharedCode INTERFACE cxx_std_20)
 # If you want to appease the CMake gods and avoid globs, manually add files like so:
 # set(SourceFiles Source/PluginEditor.h Source/PluginProcessor.h Source/PluginEditor.cpp Source/PluginProcessor.cpp)
 file(GLOB_RECURSE SourceFiles CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/source/*.h")
-target_sources(SharedCode INTERFACE ${SourceFiles})
+target_sources(${PROJECT_NAME} PRIVATE ${SourceFiles})
 
 # Adds a BinaryData target for embedding assets into the binary
 include(Assets)
@@ -103,8 +99,8 @@ include(Assets)
 include(XcodePrettify)
 
 # This is where you can set preprocessor definitions for JUCE and your plugin
-target_compile_definitions(SharedCode
-    INTERFACE
+target_compile_definitions(${PROJECT_NAME}
+    PUBLIC
 
     # JUCE_WEB_BROWSER and JUCE_USE_CURL off by default
     JUCE_WEB_BROWSER=0  # If you set this to 1, add `NEEDS_WEB_BROWSER TRUE` to the `juce_add_plugin` call
@@ -122,13 +118,8 @@ target_compile_definitions(SharedCode
     PRODUCT_NAME_WITHOUT_VERSION="Pamplejuce"
 )
 
-# Link to any other modules you added (with juce_add_module) here!
-# Usually JUCE modules must have PRIVATE visibility
-# See https://github.com/juce-framework/JUCE/blob/master/docs/CMake%20API.md#juce_add_module
-# However, with Pamplejuce, you'll link modules to SharedCode with INTERFACE visibility
-# This allows the JUCE plugin targets and the Tests target to link against it
-target_link_libraries(SharedCode
-    INTERFACE
+target_link_libraries(${PROJECT_NAME}
+    PRIVATE
     Assets
     melatonin_inspector
     juce_audio_utils
@@ -139,9 +130,6 @@ target_link_libraries(SharedCode
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
     juce::juce_recommended_warning_flags)
-
-# Link the JUCE plugin targets our SharedCode target
-target_link_libraries("${PROJECT_NAME}" PRIVATE SharedCode)
 
 # IPP support, comment out to disable
 include(PamplejuceIPP)
